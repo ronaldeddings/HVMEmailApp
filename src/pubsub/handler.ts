@@ -3,12 +3,9 @@ export interface PubSubNotification {
   historyId: number;
 }
 
-export function decodePubSubMessage(body: unknown): PubSubNotification | null {
-  const msg = body as { message?: { data?: string } };
-  if (!msg?.message?.data) return null;
-
+export function decodePubSubMessage(data: Buffer): PubSubNotification | null {
   try {
-    const decoded = Buffer.from(msg.message.data, "base64").toString("utf-8");
+    const decoded = data.toString("utf-8");
     const parsed = JSON.parse(decoded) as PubSubNotification;
     if (!parsed.emailAddress || !parsed.historyId) return null;
     return parsed;

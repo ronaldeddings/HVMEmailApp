@@ -1,3 +1,4 @@
+import { PubSub } from "@google-cloud/pubsub";
 import { config } from "./config";
 import { decodePubSubMessage } from "./pubsub/handler";
 import { getNewMessages } from "./gmail/history";
@@ -25,37 +26,48 @@ async function processNotification(emailAddress: string, historyId: number) {
   }
 }
 
-const server = Bun.serve({
-  port: config.port,
-
-  async fetch(req) {
-    const url = new URL(req.url);
-
-    if (url.pathname === "/health") {
-      return Response.json({ status: "ok", timestamp: new Date().toISOString() });
-    }
-
-    if (url.pathname === "/webhook/gmail" && req.method === "POST") {
-      const body = await req.json();
-      const notification = decodePubSubMessage(body);
-
-      if (!notification) {
-        return new Response("Invalid notification", { status: 400 });
-      }
-
-      // Process async — respond to Pub/Sub immediately to avoid retries
-      processNotification(notification.emailAddress, notification.historyId).catch(
-        (err) => console.error("[webhook] Processing error:", err),
-      );
-
-      return new Response("OK", { status: 200 });
-    }
-
-    return new Response("Not Found", { status: 404 });
-  },
+// Set up Pub/Sub pull subscriber
+const credentials = JSON.parse(config.googleServiceAccountKey);
+const pubsub = new PubSub({
+  projectId: credentials.project_id,
+  credentials,
 });
 
-console.log(`[hvm-email] Server running on http://localhost:${server.port}`);
-console.log(`[hvm-email] Webhook: POST /webhook/gmail`);
-console.log(`[hvm-email] Health:  GET /health`);
-console.log(`[hvm-email] Capture: ${config.captureDir}`);
+const subscription = pubsub.subscription(config.googlePubsubSubscription);
+
+subscription.on("message", async (message) => {
+  const notification = decodePubSubMessage(message.data);
+
+  if (!notification) {
+    console.warn("[subscriber] Invalid message, acking to discard");
+    message.ack();
+    return;
+  }
+
+  try {
+    await processNotification(notification.emailAddress, notification.historyId);
+    message.ack();
+  } catch (err) {
+    console.error("[subscriber] Processing failed, nacking for retry:", err);
+    message.nack();
+  }
+});
+
+subscription.on("error", (error) => {
+  console.error("[subscriber] Subscription error:", error);
+});
+
+// Graceful shutdown
+async function shutdown() {
+  console.log("[hvm-email] Shutting down...");
+  await subscription.close();
+  process.exit(0);
+}
+
+process.on("SIGINT", shutdown);
+process.on("SIGTERM", shutdown);
+
+console.log(`[hvm-email] Pull subscriber connected`);
+console.log(`[hvm-email] Subscription: ${config.googlePubsubSubscription}`);
+console.log(`[hvm-email] Capture dir: ${config.captureDir}`);
+console.log(`[hvm-email] Waiting for messages... (Ctrl+C to stop)`);
