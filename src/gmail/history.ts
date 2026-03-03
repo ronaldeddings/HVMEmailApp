@@ -24,12 +24,21 @@ export async function getNewMessages(
 
   const messages: gmail_v1.Schema$Message[] = [];
   for (const id of messageIds) {
-    const msg = await gmail.users.messages.get({
-      userId: "me",
-      id,
-      format: "full",
-    });
-    messages.push(msg.data);
+    try {
+      const msg = await gmail.users.messages.get({
+        userId: "me",
+        id,
+        format: "full",
+      });
+      messages.push(msg.data);
+    } catch (err: unknown) {
+      const status = (err as { status?: number }).status;
+      if (status === 404) {
+        console.warn(`[history] Message ${id} not found (deleted/moved), skipping`);
+      } else {
+        throw err;
+      }
+    }
   }
 
   return messages;
