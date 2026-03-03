@@ -1,0 +1,19 @@
+{
+  "name": "hvm-email-app",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "bun run --watch src/index.ts",
+    "start": "bun run src/index.ts",
+    "setup-watch": "bun run scripts/setup-watch.ts",
+    "renew-watches": "bun run scripts/renew-watches.ts",
+    "list-users": "bun run scripts/list-users.ts"
+  },
+  "dependencies": {
+    "googleapis": "^144.0.0",
+    "google-auth-library": "^9.0.0"
+  },
+  "devDependencies": {
+    "@types/bun": "latest"
+  }
+}
