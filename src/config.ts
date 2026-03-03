@@ -9,5 +9,6 @@ export const config = {
   googleServiceAccountKey: required("GOOGLE_SERVICE_ACCOUNT_KEY"),
   googlePubsubTopic: required("GOOGLE_PUBSUB_TOPIC"),
   domain: required("GOOGLE_WORKSPACE_DOMAIN"),
+  adminEmail: required("GOOGLE_ADMIN_EMAIL"),
   captureDir: process.env.CAPTURE_DIR ?? "./captured",
 } as const;

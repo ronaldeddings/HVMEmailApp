@@ -32,7 +32,7 @@ export async function getAdminClient() {
     scopes: [
       "https://www.googleapis.com/auth/admin.directory.user.readonly",
     ],
-    subject: `admin@${config.domain}`,
+    subject: config.adminEmail,
   });
   return google.admin({ version: "directory_v1", auth });
 }
