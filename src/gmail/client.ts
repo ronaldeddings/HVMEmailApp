@@ -4,16 +4,15 @@ import { config } from "../config";
 
 let _key: { client_email: string; private_key: string } | null = null;
 
-async function getKey() {
+function getKey() {
   if (!_key) {
-    const keyFile = Bun.file(config.googleServiceAccountKeyPath);
-    _key = await keyFile.json();
+    _key = JSON.parse(config.googleServiceAccountKey);
   }
   return _key!;
 }
 
 export async function getGmailClient(userEmail: string) {
-  const key = await getKey();
+  const key = getKey();
   const auth = new JWT({
     email: key.client_email,
     key: key.private_key,
@@ -26,7 +25,7 @@ export async function getGmailClient(userEmail: string) {
 }
 
 export async function getAdminClient() {
-  const key = await getKey();
+  const key = getKey();
   const auth = new JWT({
     email: key.client_email,
     key: key.private_key,

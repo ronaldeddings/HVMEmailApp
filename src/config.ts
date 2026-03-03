@@ -6,7 +6,7 @@ function required(key: string): string {
 
 export const config = {
   port: Number(process.env.PORT ?? 3000),
-  googleServiceAccountKeyPath: required("GOOGLE_SERVICE_ACCOUNT_KEY_PATH"),
+  googleServiceAccountKey: required("GOOGLE_SERVICE_ACCOUNT_KEY"),
   googlePubsubTopic: required("GOOGLE_PUBSUB_TOPIC"),
   domain: required("GOOGLE_WORKSPACE_DOMAIN"),
   captureDir: process.env.CAPTURE_DIR ?? "./captured",
