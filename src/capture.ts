@@ -2,6 +2,7 @@ import type { gmail_v1 } from "googleapis";
 import { config } from "./config";
 import { mkdir } from "node:fs/promises";
 import { join } from "node:path";
+import { existsSync } from "node:fs";
 
 export interface CapturedEmail {
   id: string;
@@ -78,12 +79,17 @@ export function extractEmail(
   };
 }
 
-export async function saveCapture(captured: CapturedEmail): Promise<string> {
+export async function saveCapture(captured: CapturedEmail): Promise<string | null> {
   const dir = join(config.captureDir, captured.userEmail);
   await mkdir(dir, { recursive: true });
 
-  const filename = `${captured.date ? new Date(captured.date).toISOString().replace(/[:.]/g, "-") : captured.id}.json`;
+  const filename = `${captured.id}.json`;
   const filepath = join(dir, filename);
+
+  if (existsSync(filepath)) {
+    console.log(`[capture] Skipped duplicate ${captured.userEmail}/${filename}`);
+    return null;
+  }
 
   await Bun.write(filepath, JSON.stringify(captured, null, 2));
   console.log(`[capture] Saved ${captured.userEmail}/${filename} — "${captured.subject}"`);
